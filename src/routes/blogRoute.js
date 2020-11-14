@@ -105,6 +105,28 @@ router.patch(
   }
 );
 
+router.patch("/:blogId", async (req, res) => {
+  const {
+    query: { action },
+    params: { blogId }
+  } = req;
+
+  try {
+    if (!action && !blogId) {
+      return;
+    }
+
+    let update = null;
+
+    update = action === "like" ? { $inc: { like: 1 } } : { $dec: { like: -1 } };
+
+    const blog = await Blog.findByIdAndUpdate(blogId, update).exec();
+  } catch (err) {
+    console.log(err);
+    res.status(500).json({ msg: "Internal Server Error" });
+  }
+});
+
 router.patch("/like/:Id", async (req, res) => {
   if (!req.params.Id) {
     return res.status(403).json({ msg: "Blog Id must be provided" });

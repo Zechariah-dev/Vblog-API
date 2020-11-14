@@ -1,4 +1,6 @@
 const mongoose = require("mongoose");
+const moment = require("moment");
+const { TOKEN_EXPIRES_IN, TOKEN_TIME_FORMAT } = require("../config/config");
 
 const verificationTokenSchema = new mongoose.Schema({
   user: {
@@ -10,11 +12,19 @@ const verificationTokenSchema = new mongoose.Schema({
   },
   createdAt: {
     type: Date,
-    required: true,
-    default: Date.now,
-    expires: 43200
+    default: Date.now
   }
 });
+
+verificationTokenSchema.methods.findValidToken = async function () {
+  const { createdAt } = this;
+
+  let currentTime = moment(Date.now);
+
+  let momentTime = moment(createdAt).add(TOKEN_EXPIRES_IN, TOKEN_TIME_FORMAT);
+
+  return currentTime > momentTime;
+};
 
 const userModel = mongoose.model("verificationTokens", verificationTokenSchema);
 

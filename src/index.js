@@ -5,19 +5,16 @@ const session = require("express-session");
 const cookieParser = require("cookie-parser");
 const cors = require("cors");
 const MongoStore = require("connect-mongo")(session);
-require("dotenv").config({ path: "./config/config.env" });
+const { MONGO_URI } = require("./config/config");
 
 const app = express();
 
 mongoose
-  .connect(
-    "mongodb+srv://user:userpass123@cluster0.mvxzn.mongodb.net/VBlog?retryWrites=true&w=majority",
-    {
-      useCreateIndex: true,
-      useUnifiedTopology: true,
-      useNewUrlParser: true
-    }
-  )
+  .connect(MONGO_URI, {
+    useCreateIndex: true,
+    useUnifiedTopology: true,
+    useNewUrlParser: true
+  })
   .then(() => {
     console.log("MongoDB Connected");
   })
@@ -30,20 +27,20 @@ app.use(cookieParser());
 app.use(cors());
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: false }));
-app.use(
-  session({
-    secret: "session secret",
-    resave: false,
-    saveUninitialized: true,
-    cookie: {
-      secure: true,
-      maxAge: 7200000
-    },
-    store: new MongoStore({
-      autoRemove: "disabled"
-    })
-  })
-);
+// app.use(
+//   session({
+//     secret: "session secret",
+//     resave: false,
+//     saveUninitialized: true,
+//     cookie: {
+//       secure: true,
+//       maxAge: 7200000
+//     },
+//     store: new MongoStore({
+//       autoRemove: "disabled"
+//     })
+//   })
+// );
 
 const authRouter = require("./routes/authRoute");
 const blogRouter = require("./routes/blogRoute");

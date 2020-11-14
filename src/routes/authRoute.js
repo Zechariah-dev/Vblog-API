@@ -5,7 +5,11 @@ const VerificationToken = require("../models/VerificationToken");
 const { body, validationResult } = require("express-validator");
 const jwt = require("jsonwebtoken");
 const crypto = require("crypto");
-const { sendVerificationEmail } = require("../utils/nodemailer");
+const { sendVerificationEmail } = require("../utils/mailerUtils");
+const {
+  generateAuthToken,
+  generateVerificationToken
+} = require("../utils/tokenUtils");
 
 router.post(
   "/signup",
@@ -25,7 +29,7 @@ router.post(
 
     try {
       let user;
-      let token = null;
+      let token = generateVerificationToken();
 
       const DbUser = await User.findOne({ $or: [{ email, username }] });
 
@@ -41,7 +45,7 @@ router.post(
 
       token = new VerificationToken({
         user: user.email,
-        token: crypto.randomBytes(20).toString("hex")
+        token
       });
 
       await user.save();
@@ -93,9 +97,7 @@ router.post("/login", async (req, res) => {
       });
     }
 
-    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
-      expiresIn: "1h"
-    });
+    const token = generateAuthToken(user);
 
     res.status(200).json({
       status: "success",
@@ -112,7 +114,7 @@ router.post("/login", async (req, res) => {
 });
 
 router.post(
-  "/update",
+  "/add-info",
   [
     body("fbLink").trim().not().isEmpty().isUrl(),
     body("twitterLink").trim().not().isEmpty().isUrl(),
@@ -160,6 +162,16 @@ router.get("/verify/:token", async (req, res) => {
       token: req.params.token
     }).exec();
 
+    const expiredToken = tokenDoc.findValidToken();
+
+    if (expiredToken) {
+      tokenDoc.remove();
+      return res.status(403).json({
+        status: "failure",
+        message: "verification token has expired, please try again"
+      });
+    }
+
     if (!tokenDoc) {
       return res.status(401).json({ status: "failure", msg: "Invalid token" });
     }
@@ -168,10 +180,6 @@ router.get("/verify/:token", async (req, res) => {
 
     if (!user) {
       return res.status(401).json({ status: "failure", msg: "No user found" });
-    }
-
-    if (user.isVerified) {
-      return res.status(401).json({ msg: "Email already verified" });
     }
 
     user.isVerified = true;

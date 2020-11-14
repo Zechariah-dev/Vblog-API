@@ -29,6 +29,9 @@ const userSchema = new mongoose.Schema(
     passwordResetExpires: {
       type: Date
     },
+    verificationToken: {
+      type: String
+    },
 
     fbLink: {
       type: String
